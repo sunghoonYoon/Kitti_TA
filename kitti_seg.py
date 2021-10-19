@@ -8,9 +8,12 @@ Custom Norm wrappers to enable sync BN, regular BN and for weight initialization
 """
 import torch.nn as nn
 import numpy as np
+from torchvision import transforms
+
 # from config import cfg
 
 # from apex import amp
+
 
 def Norm2d(in_channels):
     """
@@ -44,6 +47,55 @@ def Upsample(x, size):
     return nn.functional.interpolate(x, size=size, mode='bilinear',
                                      align_corners=True)
 
+
+def decode_segmap(temp):
+    colors = [  # [  0,   0,   0],
+        [128, 64, 128],#road
+        [244, 35, 232],#sidewalk
+        [70, 70, 70],#building
+        [102, 102, 156],#wall
+        [190, 153, 153],#fence
+        [153, 153, 153],#pole
+        [250, 170, 30],#traffic light
+        [220, 220, 0],#trafiic sign
+        [107, 142, 35],  # vegetation dark green
+        [152, 251, 152],  # terrain bright green
+        [0, 130, 180],#sky
+        [220, 20, 60],
+        [255, 0, 0],
+        [0, 0, 142],
+        [0, 0, 70],
+        [0, 60, 100],
+        [0, 80, 100],
+        [0, 0, 230],
+        [119, 11, 32],
+    ]
+
+    label_colours = dict(zip(range(19), colors))
+    r = temp.copy()
+    g = temp.copy()
+    b = temp.copy()
+    for l in range(0, 19):
+        r[temp == l] = label_colours[l][0]
+        g[temp == l] = label_colours[l][1]
+        b[temp == l] = label_colours[l][2]
+
+    rgb = np.zeros((temp.shape[0], temp.shape[1], 3))
+    rgb[:, :, 0] = r / 255.0
+    rgb[:, :, 1] = g / 255.0
+    rgb[:, :, 2] = b / 255.0
+    return rgb
+
+
+def denorm(img):
+    # ImageNet statistics
+    mean_img = [0.485, 0.456, 0.406]
+    std_img = [0.229, 0.224, 0.225]
+
+    tf_denorm = transforms.Normalize(mean = [-mean_img[0] / std_img[0], -mean_img[1] / std_img[1], -mean_img[2] / std_img[2]],
+                                     std = [1 / std_img[0], 1 / std_img[1], 1 / std_img[2]])
+
+    return tf_denorm(img)
 
 """
 # Code adapted from:
@@ -585,52 +637,3 @@ class DeepWV3Plus(nn.Module):
             return self.criterion(out, gts)
 
         return out
-
-def decode_segmap(temp):
-    colors = [  # [  0,   0,   0],
-        [128, 64, 128],#road
-        [244, 35, 232],#sidewalk
-        [70, 70, 70],#building
-        [102, 102, 156],#wall
-        [190, 153, 153],#fence
-        [153, 153, 153],#pole
-        [250, 170, 30],#traffic light
-        [220, 220, 0],#trafiic sign
-        [107, 142, 35],  # vegetation dark green
-        [152, 251, 152],  # terrain bright green
-        [0, 130, 180],#sky
-        [220, 20, 60],
-        [255, 0, 0],
-        [0, 0, 142],
-        [0, 0, 70],
-        [0, 60, 100],
-        [0, 80, 100],
-        [0, 0, 230],
-        [119, 11, 32],
-    ]
-
-    label_colours = dict(zip(range(19), colors))
-    r = temp.copy()
-    g = temp.copy()
-    b = temp.copy()
-    for l in range(0, 19):
-        r[temp == l] = label_colours[l][0]
-        g[temp == l] = label_colours[l][1]
-        b[temp == l] = label_colours[l][2]
-
-    rgb = np.zeros((temp.shape[0], temp.shape[1], 3))
-    rgb[:, :, 0] = r / 255.0
-    rgb[:, :, 1] = g / 255.0
-    rgb[:, :, 2] = b / 255.0
-    return rgb
-
-
-def denorm(img):
-    # ImageNet statistics
-    mean_img = [0.485, 0.456, 0.406]
-    std_img = [0.229, 0.224, 0.225]
-
-    tf_denorm = transforms.Normalize(mean = [-mean_img[0] / std_img[0], -mean_img[1] / std_img[1], -mean_img[2] / std_img[2]],
-                                     std = [1 / std_img[0], 1 / std_img[1], 1 / std_img[2]])
-
-    return tf_denorm(img)
