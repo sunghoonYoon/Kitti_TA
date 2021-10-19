@@ -7,6 +7,7 @@ This code is from https://github.com/NVIDIA/semantic-segmentation
 Custom Norm wrappers to enable sync BN, regular BN and for weight initialization
 """
 import torch.nn as nn
+import numpy as np
 # from config import cfg
 
 # from apex import amp
