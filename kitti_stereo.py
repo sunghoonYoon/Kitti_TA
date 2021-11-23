@@ -247,15 +247,3 @@ class PSMNet(nn.Module):
             return pred1, pred2, pred3
         else:
             return pred3
-
-def test_img(imgL,imgR):
-      model.eval()
-
-      imgL = imgL.cuda()
-      imgR = imgR.cuda()     
-
-      with torch.no_grad():
-          disp = model(imgL,imgR)
-
-      disp = torch.squeeze(disp)
-      pred_disp = disp.data.cpu().numpy()
